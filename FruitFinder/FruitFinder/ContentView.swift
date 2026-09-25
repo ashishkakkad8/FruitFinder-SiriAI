@@ -1,4 +1,5 @@
 import SwiftUI
+import AppIntents
 
 struct ContentView: View {
     @StateObject private var router = SearchRouter.shared
@@ -57,11 +58,20 @@ struct ContentView: View {
                     } else {
                         ForEach(results) { fruit in
                             FruitRow(fruit: fruit)
+                                .appEntityIdentifier(
+                                    EntityIdentifier(
+                                        for: FruitEntity.self,
+                                        identifier: fruit.name.lowercased()
+                                    )
+                                )
                         }
                     }
                 }
             }
             .navigationTitle("Fruit Finder")
+            .navigationDestination(item: $router.selectedFruit) { fruit in
+                FruitDetailView(fruit: fruit)
+            }
             .sheet(isPresented: $showPhotoFinder) {
                 NavigationStack {
                     FruitPhotoView()
@@ -96,6 +106,42 @@ private struct FruitRow: View {
             }
         }
         .padding(.vertical, 6)
+    }
+}
+
+private struct FruitDetailView: View {
+    let fruit: Fruit
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                Text(fruit.emoji)
+                    .font(.system(size: 110))
+                    .frame(maxWidth: .infinity)
+
+                Text(fruit.name)
+                    .font(.largeTitle.bold())
+
+                Text(fruit.details)
+                    .font(.body)
+                    .foregroundStyle(.secondary)
+
+                Text("This fruit is the primary content currently visible on screen.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding()
+        }
+        .navigationTitle(fruit.name)
+        .navigationBarTitleDisplayMode(.inline)
+        .userActivity("com.fruitfinder.viewFruit", element: FruitEntity(fruit: fruit)) { entity, activity in
+            activity.title = "Viewing \(entity.name)"
+            activity.appEntityIdentifier = EntityIdentifier(
+                for: FruitEntity.self,
+                identifier: entity.id
+            )
+        }
     }
 }
 
